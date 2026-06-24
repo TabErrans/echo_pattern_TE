@@ -97,7 +97,8 @@ $$
 
 donde (s_A) y (s_B) representan el factor de escala de cada esqueleto.
 
--------------------------------------------------------------------------------------- ## Matriz de diferencias
+-------------------------------------------------------------------------------------- 
+## Matriz de diferencias
 
 Una vez normalizados los esqueletos, puede calcularse una matriz de diferencias:
 
