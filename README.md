@@ -1,217 +1,161 @@
 # `echo_pattern_TE`
 
-Repositorio en R para comparar poses humanas extraídas con OpenPose.
-Incluye funciones para medir similitud estructural entre esqueletos y
-distancia espacial entre `keypoints`, útil en análisis de gestos,
-sincronía conductual e interacción multimodal. Solo requiere el paquete
-`vegan`.
+Repositorio en R para comparar poses humanas extraídas con OpenPose. Incluye funciones para medir similitud estructural entre esqueletos y distancia espacial entre `keypoints`, útil en análisis de gestos, sincronía conductual e interacción multimodal. Solo requiere el paquete `vegan`.
 
 # Echo Pattern
 
-Funciones en R para comparar la similitud entre dos esqueletos extraídos
-de vídeo, usando coordenadas normalizadas de puntos corporales, faciales
-o manuales.
+# Fundamento Matemático
 
-El código permite comparar esqueletos mediante dos enfoques:
+## Objetivo
 
-`Correlación de Mantel`: compara la estructura interna de distancias entre
-puntos. `Distancia euclídea media`: calcula la diferencia directa punto a
-punto entre dos esqueletos. Dependencias
+Echo Pattern TE tiene como objetivo comparar dos esqueletos representados mediante puntos corporales para estimar si ambos pertenecen a la misma persona.
 
-```r
-install.packages('vegan')
-install.packages('data.table')
-library(vegan)
-library(data.table)
-```
+Cada esqueleto se modela como una matriz de coordenadas. Si se detectan (n) puntos corporales, cada esqueleto puede representarse como:
 
-Estructura esperada de los datos
+$$
+A =
+\begin{bmatrix}
+x_1 & y_1 \
+x_2 & y_2 \
+\vdots & \vdots \
+x_n & y_n
+\end{bmatrix}
+$$
 
-Las funciones esperan un objeto tipo `data.table` llamado, por ejemplo,
-`video_dt`, con al menos estas columnas:
+donde cada fila representa un punto del cuerpo, por ejemplo hombros, codos, muñecas, caderas, rodillas o tobillos.
 
-`Columna` `Descripción` `frame` Número o identificador del `frame` `people_id`
-Identificador de la persona detectada `type_points` Tipo de puntos
-detectados `nx` Coordenada X normalizada `ny` Coordenada Y normalizada
+------------------------------------------------------------------------
 
-Los valores válidos para `type_points` son:
+## Comparación entre dos esqueletos
 
-`pose_keypoints` `face_keypoints` `hand_left_keypoints`
-`hand_right_keypoints`
+Dados dos esqueletos (A) y (B), el objetivo es medir cuánto se parecen sus estructuras corporales.
 
-Además, las funciones aceptan:
+$$
+A =
+{a_1, a_2, ..., a_n}
+$$
 
-`all_points`
+$$
+B =
+{b_1, b_2, ..., b_n}
+$$
 
-para usar todos los puntos disponibles del esqueleto.
+donde (a_i) y (b_i) representan el mismo punto anatómico en cada esqueleto.
 
-Función `echo_pattern()`
+La diferencia entre ambos esqueletos puede calcularse como la distancia media entre puntos equivalentes:
 
-Compara dos esqueletos mediante una prueba de Mantel.
+$$
+D(A,B)=
+\frac{1}{n}
+\sum_{i=1}^{n}
+|a_i-b_i|
+$$
 
-```r
-echo_pattern(frame_1, frame_2, people_id_1, people_id_2, video_dt,
-typepoints)
-```
+donde (\|a_i-b_i\|) es la distancia euclidiana entre el punto (i) del primer esqueleto y el punto (i) del segundo.
 
-Argumentos `Argumento` `Descripción` `frame_1` `Frame` del primer
-esqueleto `frame_2` `Frame` del segundo esqueleto `people_id_1` ID de la
-persona en el primer `frame` `people_id_2` ID de la persona en el segundo
-`frame` `video_dt` `data.table` con los datos del vídeo `typepoints` Tipo de
-puntos a comparar Salida
+En 2D, esta distancia se calcula como:
 
-Devuelve un vector con:
+$$
+|a_i-b_i|=
+\sqrt{
+(x_i^A-x_i^B)^2+
+(y_i^A-y_i^B)^2
+}
+$$
 
-`Valor` `Descripción` `r` Estadístico de correlación de Mantel `p` Valor p
-asociado
+------------------------------------------------------------------------
 
-Ejemplo:
+## Normalización
 
-```r
-echo_pattern(
-  frame_1 = 10,
-  frame_2 = 20,
-  people_id_1 = 1,
-  people_id_2 = 1,
-  video_dt = video_dt,
-  typepoints = 'pose_keypoints'
-)
-```
+Antes de comparar dos esqueletos, es necesario normalizarlos. Esto evita que diferencias de posición, escala o tamaño en la imagen afecten al resultado.
 
-Salida esperada:
+Por ejemplo, dos esqueletos pueden representar a la misma persona, pero aparecer en posiciones distintas dentro de la imagen. Para corregirlo, se puede trasladar cada esqueleto respecto a un punto de referencia, como el centro de la cadera o el centro del torso.
 
-```r
-    r         p
-0.8423152 0.0010000
-```
+Sea (r) el punto de referencia del esqueleto. Cada punto se normaliza como:
 
-Interpretación de `echo_pattern()` `r` cercano a `1`: los
-dos esqueletos tienen una estructura de distancias muy parecida. `r`
-cercano a `0`: no hay una relación clara entre las estructuras. `r`
-cercano a `-1`: las estructuras son opuestas. `p` indica si la similitud observada
-es estadísticamente significativa.
+$$
+a_i' = a_i - r_A
+$$
 
-Esta función es útil cuando interesa saber si la configuración global
-del cuerpo se mantiene entre dos `frames` o dos personas.
+$$
+b_i' = b_i - r_B
+$$
 
-Función `echo_pattern_eucdis()`
+De esta forma, ambos esqueletos quedan centrados en un mismo origen.
 
-Calcula la distancia euclídea media punto a punto entre dos esqueletos.
+También puede aplicarse una normalización por escala, dividiendo las coordenadas entre una medida corporal estable, como la distancia entre hombros o la longitud del torso:
 
-```r
-echo_pattern_eucdis(frame_1, frame_2, people_id_1, people_id_2,
-video_dt, typepoints)
-```
+$$
+a_i'' =
+\frac{a_i'}{s_A}
+$$
 
-Argumentos
+$$
+b_i'' =
+\frac{b_i'}{s_B}
+$$
 
-Son los mismos que en `echo_pattern()`.
+donde (s_A) y (s_B) representan el factor de escala de cada esqueleto.
 
-Salida
+|                                                                                                                                                                            |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| \## Matriz de diferencias                                                                                                                                                  |
+| Una vez normalizados los esqueletos, puede calcularse una matriz de diferencias:                                                                                           |
+| $$                                                                                                                                                                         
+ E = A'' - B''                                                                                                                                                               
+ $$                                                                                                                                                                          |
+| Esta matriz contiene la diferencia entre cada punto corporal de ambos esqueletos.                                                                                          |
+| A partir de ella, se puede obtener un error global mediante la norma de Frobenius:                                                                                         |
+| $$                                                                                                                                                                         
+ \lVert E \rVert_F =                                                                                                                                                         
+ \sqrt{                                                                                                                                                                      
+ \sum_{i=1}^{n}                                                                                                                                                              
+ \sum_{j=1}^{d}                                                                                                                                                              
+ E_{ij}^{2}                                                                                                                                                                  
+ }                                                                                                                                                                           
+ $$                                                                                                                                                                          |
+| donde:                                                                                                                                                                     |
+| \* $n$ es el número de puntos corporales. \* $d$ es la dimensión de cada punto, normalmente 2 o 3. \* $E_{ij}$ es la diferencia entre las coordenadas de ambos esqueletos. |
+| Cuanto menor sea la norma de Frobenius, mayor será la similitud entre ambos esqueletos.                                                                                    |
 
-Devuelve un vector con:
+## Puntuación de similitud
 
-`Valor` `Descripción` `distancia` Distancia euclídea media entre puntos
-equivalentes
+Para transformar la distancia en una puntuación de similitud, puede utilizarse una función decreciente:
 
-Ejemplo:
+$$
+S(A,B)=
+\frac{1}{1+\lVert A''-B'' \rVert_F}
+$$
 
-```r
-echo_pattern_eucdis(
-  frame_1 = 10,
-  frame_2 = 20,
-  people_id_1 = 1,
-  people_id_2 = 1,
-  video_dt = video_dt,
-  typepoints = 'all_points'
-)
-```
+Esta puntuación toma valores cercanos a 1 cuando los esqueletos son muy parecidos, y valores cercanos a 0 cuando son muy diferentes.
 
-Salida esperada:
+------------------------------------------------------------------------
 
-```r
-distancia
-0.0348291
-```
+## Criterio de decisión
 
-Interpretación de `echo_pattern_eucdis()` Valores
-cercanos a `0` indican que los esqueletos son muy similares punto a punto.
-Valores más altos indican mayor diferencia espacial entre ambos
-esqueletos.
+Finalmente, se define un umbral (\tau) para decidir si dos esqueletos pertenecen probablemente a la misma persona:
 
-Esta función es útil cuando interesa medir una diferencia directa de
-posición entre dos esqueletos.
+$$
+S(A,B) \geq \tau
+$$
 
-Gestión de valores perdidos
+Si la similitud supera el umbral, el sistema considera que ambos esqueletos podrían pertenecer a la misma persona.
 
-Ambas funciones eliminan automáticamente los puntos con valores no
-finitos en cualquiera de los dos esqueletos:
+Si no lo supera, se considera que los esqueletos presentan diferencias suficientes como para corresponder a personas distintas.
 
-`NA` `NaN` `Inf` `-Inf`
+------------------------------------------------------------------------
 
-Si después de eliminar esos puntos quedan menos de `3` puntos válidos, la
-función devuelve `NA`.
+## Interpretación
 
-Errores y advertencias
+El método se basa en comparar la geometría corporal relativa, no la posición absoluta de la persona en la imagen.
 
-Si `typepoints` no es válido, la función detiene la ejecución con un
-error:
+Por ello, el proceso general es:
 
-```r
-typepoints debe ser pose_keypoints, face_keypoints, hand_left_keypoints,
-hand_right_keypoints o all_points
-```
+1.  Detectar los puntos corporales de cada persona.
+2.  Representar cada esqueleto como una matriz de coordenadas.
+3.  Normalizar posición y escala.
+4.  Comparar puntos equivalentes entre ambos esqueletos.
+5.  Calcular una puntuación global de similitud.
+6.  Decidir si ambos esqueletos pertenecen a la misma persona mediante un umbral.
 
-En `echo_pattern_eucdis()`, si los dos esqueletos no tienen el mismo
-número de puntos, se devuelve `NA` y aparece una advertencia:
-
-```r
-Los esqueletos no tienen el mismo número de puntos
-```
-
-Diferencias entre
-ambas funciones `Función` `Qué mide` `Resultado` `echo_pattern()`
-Similitud de la estructura interna de distancias `r` y `p`
-`echo_pattern_eucdis()`
-Diferencia directa punto a punto Distancia media Uso recomendado
-
-Usa `echo_pattern()` si quieres comparar la forma general o patrón del
-esqueleto.
-
-Usa `echo_pattern_eucdis()` si quieres medir cuánto se han desplazado los
-puntos entre dos esqueletos.
-
-Ejemplo completo
-
-```r
-library(data.table)
-library(vegan)
-
-resultado_mantel <- echo_pattern(
-  frame_1 = 1,
-  frame_2 = 2,
-  people_id_1 = 0,
-  people_id_2 = 0,
-  video_dt = video_dt,
-  typepoints = 'pose_keypoints'
-)
-
-resultado_distancia <- echo_pattern_eucdis(
-  frame_1 = 1,
-  frame_2 = 2,
-  people_id_1 = 0,
-  people_id_2 = 0,
-  video_dt = video_dt,
-  typepoints = 'pose_keypoints'
-)
-
-resultado_mantel
-resultado_distancia
-```
-
-Notas El orden de los puntos debe
-ser equivalente entre los dos esqueletos. Las coordenadas `nx` y `ny`
-deberían estar normalizadas para que las comparaciones sean
-consistentes. La prueba de Mantel usa `999` permutaciones. Para
-comparaciones masivas entre muchos `frames`, se recomienda aplicar estas
-funciones dentro de bucles o con funciones tipo `lapply`.
+Este enfoque permite comparar poses humanas de forma matemática, utilizando la estructura espacial de los puntos corporales como una firma geométrica aproximada de cada individuo.
