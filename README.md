@@ -97,28 +97,34 @@ $$
 
 donde (s_A) y (s_B) representan el factor de escala de cada esqueleto.
 
-|                                                                                                                                                                            |
-|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| \## Matriz de diferencias                                                                                                                                                  |
-| Una vez normalizados los esqueletos, puede calcularse una matriz de diferencias:                                                                                           |
-| $$                                                                                                                                                                         
- E = A'' - B''                                                                                                                                                               
- $$                                                                                                                                                                          |
-| Esta matriz contiene la diferencia entre cada punto corporal de ambos esqueletos.                                                                                          |
-| A partir de ella, se puede obtener un error global mediante la norma de Frobenius:                                                                                         |
-| $$                                                                                                                                                                         
- \lVert E \rVert_F =                                                                                                                                                         
- \sqrt{                                                                                                                                                                      
- \sum_{i=1}^{n}                                                                                                                                                              
- \sum_{j=1}^{d}                                                                                                                                                              
- E_{ij}^{2}                                                                                                                                                                  
- }                                                                                                                                                                           
- $$                                                                                                                                                                          |
-| donde:                                                                                                                                                                     |
-| \* $n$ es el número de puntos corporales. \* $d$ es la dimensión de cada punto, normalmente 2 o 3. \* $E_{ij}$ es la diferencia entre las coordenadas de ambos esqueletos. |
-| Cuanto menor sea la norma de Frobenius, mayor será la similitud entre ambos esqueletos.                                                                                    |
+-------------------------------------------------------------------------------------- ## Matriz de diferencias
 
-## Puntuación de similitud
+Una vez normalizados los esqueletos, puede calcularse una matriz de diferencias:
+
+$$
+E = A'' - B''
+$$
+
+Esta matriz contiene la diferencia entre cada punto corporal de ambos esqueletos.
+
+A partir de ella, se puede obtener un error global mediante la norma de Frobenius:
+
+$$
+\lVert E \rVert_F =
+\sqrt{
+\sum_{i=1}^{n}
+\sum_{j=1}^{d}
+E_{ij}^{2}
+}
+$$
+
+donde:
+
+-   $n$ es el número de puntos corporales.
+-   $d$ es la dimensión de cada punto, normalmente 2 o 3.
+-   $E_{ij}$ es la diferencia entre las coordenadas de ambos esqueletos.
+
+Cuanto menor sea la norma de Frobenius, mayor será la similitud entre ambos esqueletos. \## Puntuación de similitud
 
 Para transformar la distancia en una puntuación de similitud, puede utilizarse una función decreciente:
 
